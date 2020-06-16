@@ -1,0 +1,958 @@
+#include<stdio.h>
+#include<math.h>
+#include<stdlib.h>
+#include<string.h>
+
+
+typedef struct binary
+{
+char bit;
+struct binary* next;
+}binary;
+typedef struct minGrp
+{
+int term;
+struct minGrp* next;
+}minGrp;
+typedef struct node
+{
+minGrp* trm1;
+binary* lsb;
+int flag;
+struct node* next;
+}node;
+typedef struct list
+{ 
+
+
+
+
+
+
+}list;
+ 
+node* elem;
+int ones;
+struct list* next; 
+typedef struct FTerm
+{ 
+binary* lsb;
+struct FTerm* next;
+}FTerm;
+typedef struct prmImps
+{
+int pterm; int count; FTerm* pbnry;
+struct prmImps* next;
+}prmImps;
+int bits, lstp;
+node* flagb;
+
+
+//
+binary* createBit(char);
+minGrp* createGrp(int);
+node* createNode(minGrp*, binary*);
+list* createList(int);
+prmImps* createImp(int); FTerm* createFTerm(binary*);
+//
+binary* addBit(binary*, char);
+minGrp* addTerm(minGrp*, minGrp*);
+node* addNode(node*, node*);
+list* addList(int);
+prmImps* addImps(prmImps*, int); FTerm* addFTerm(FTerm*, FTerm*);
+void addElem(list*, node*, int);
+//
+int putBits(node*);
+int ifXs(binary*, binary*);
+int isIn(int, minGrp*);
+int size(minGrp*); 
+node* cmpBinary(node*, node*);
+//
+binary* getBinary(int);
+node* getPrime(list*[]);
+void getImps(node*, prmImps*); binary* getBTerm(binary*); FTerm* getFTerm(prmImps*);
+//
+void getLine(); void getSpace(); void dispList(list*);
+void dispNode(node*);
+void dispTerm(minGrp*); void dispBnry(binary*); void dispFTerm(FTerm*);
+
+
+void main()
+{
+int i, j, ch, l;
+char s[2];
+flagb = createNode(NULL, NULL); printf("Enter no. of Variables =>"); scanf("%i", &bits);
+binary* tbit;
+minGrp* tterm; node* tnode; node* nd1, *nd2; node* cmp;
+list* step[bits]; list* grp1, *grp2; node* prime;
+prmImps* final=NULL; FTerm* root; 
+
+for(i=0;i<=bits;i++)
+{
+step[i] = addList(i); tbit = createBit(i); tterm = createGrp(i);
+}
+l = pow(2,bits);
+int mTerm[l];
+
+
+printf("Enter 1 for MinTerms and 0 for MaxTerms
+=>");
+scanf("%i", &ch); strcpy(s, (ch)? "in":"ax"); for(i=0;i<l;i++)
+{
+mTerm[i] = (ch)? 0:1;
+}
+
+
+printf("Enter M%sTerms:\n", s);
+do
+{
+scanf("%i", &i);
+if(i<0 || i>=l)
+{
+break;
+}
+mTerm[i] = ch;
+}while(1);
+
+
+printf("Enter don't care terms:\n");
+do
+{ 
+scanf("%i", &i);
+if(i<0 || i>=pow(2, bits))
+{
+break;
+}
+mTerm[i] = 0;
+tterm = createGrp(i);
+tbit = getBinary(i);
+tnode = createNode(tterm, tbit);
+addElem(step[0], tnode, putBits(tnode));
+}while(1);
+
+
+for(i=0;i<l;i++)
+{
+if(mTerm[i])
+{
+tterm = createGrp(i);
+tbit = getBinary(i);
+tnode = createNode(tterm, tbit); addElem(step[0], tnode, putBits(tnode)); final = addImps(final, i);
+}
+}
+
+
+printf("\n");
+for(i=0;i<bits;i++)
+{
+grp1 = step[i];
+grp2 = grp1->next;
+for(j=0;j<=bits-i;j++)
+{
+if(grp1==NULL || grp2==NULL)
+{ 
+continue;
+}
+nd1 = grp1->elem;
+while(nd1!=NULL)
+{
+nd2 = grp2->elem;
+while(nd2!=NULL)
+{
+cmp = cmpBinary(nd1, nd2);
+if(cmp!=NULL)
+{ 
+
+
+grp1->ones);
+ 
+addElem(step[i+1], cmp,
+
+
+} 
+nd2 = nd2->next;
+}
+nd1 = nd1->next;
+}
+grp1 = grp2;
+grp2 = grp2->next;
+}
+}
+
+
+prime = getPrime(step); getImps(prime, final); root = getFTerm(final);
+
+
+for(i=0;i<=bits;i++)
+{
+printf("+--------------+\n"); printf("|    Step %i:   |\n", i); dispList(step[i]);
+getLine(); 
+printf("\n");
+}
+printf("The Prime Implicants are:\n");
+getLine();
+printf("|     List :  "); dispNode(prime); getLine();
+printf("The Final Terms are:\n");
+dispFTerm(root);
+printf("\n\n");
+}
+
+
+binary* createBit(char ch)
+{
+binary* ptr = (binary*)malloc(sizeof(binary));
+ptr->bit = ch;
+ptr->next = NULL;
+return ptr;
+}
+
+
+minGrp* createGrp(int n)
+{
+minGrp* ptr = (minGrp*)malloc(sizeof(minGrp));
+ptr->term = n;
+ptr->next = NULL;
+return ptr;
+}
+
+
+node* createNode(minGrp* ptr1, binary* ptr2)
+{
+node* ptr = (node*)malloc(sizeof(node));
+ptr->trm1 = ptr1;
+ptr->lsb = ptr2; 
+ptr->flag = 0;
+return ptr;
+}
+
+
+list* createList(int o)
+{
+list* ptr = (list*)malloc(sizeof(list));
+ptr->elem = NULL;
+ptr->ones = o;
+return ptr;
+}
+
+
+prmImps* createImps(int n)
+{
+prmImps* ptr = (prmImps*)malloc(sizeof(prmImps));
+ptr->pterm = n;
+ptr->count = 0;
+ptr->pbnry = NULL;
+return ptr;
+}
+
+
+FTerm* createFTerm(binary* bnry)
+{
+FTerm* ptr = (FTerm*)malloc(sizeof(FTerm));
+ptr->lsb = bnry;
+ptr->next = NULL;
+return ptr;
+}
+
+
+binary* addBit(binary* lsb, char ch)
+{
+binary* ptr = createBit(ch);
+binary* tmp=lsb; 
+
+if(lsb==NULL)
+{ 
+
+
+}
+else
+{
+ 
+lsb = ptr;
+
+
+
+
+
+
+while(tmp->next!=NULL)
+{ 
+tmp = tmp->next;
+}
+tmp->next = ptr;
+}
+
+
+return lsb;
+}
+
+
+minGrp* addTerm(minGrp* grp, minGrp* ptr)
+{
+minGrp* trm, *tmp;
+while(ptr!=NULL)
+{
+trm = createGrp(ptr->term);
+if(grp==NULL)
+{ 
+
+
+}
+else
+{
+ 
+grp = trm;
+
+
+
+
+
+
+tmp = grp;
+while(tmp->next!=NULL)
+{ 
+tmp = tmp->next; 
+}
+tmp->next = trm;
+}
+ptr = ptr->next;
+}
+return grp;
+}
+
+
+node* addNode(node* elem, node* ptr)
+{
+node* tmp=elem; int k=1; if(elem==NULL)
+{ 
+
+
+}
+else
+{
+ 
+elem = ptr;
+
+
+
+
+
+
+while(tmp->next!=NULL)
+{ 
+if(cmpBinary(tmp, ptr)==flagb)
+{
+k=0;
+break;
+}
+tmp = tmp->next;
+}
+if(cmpBinary(tmp, ptr)==flagb)
+{ 
+
+
+}
+if(k)
+{
+ 
+k=0; 
+tmp->next = ptr;
+}
+}
+
+
+return elem;
+}
+
+
+list* addList(int stp)
+{
+list* root = NULL; list* tmp = NULL; int i;
+
+
+for(i=bits-stp;i>=0;i--)
+{
+tmp = createList(i); tmp->next = root; root = tmp;
+}
+
+
+return root;
+}
+
+
+prmImps* addImps(prmImps* root, int n)
+{
+prmImps* ptr = createImps(n);
+prmImps* tmp=root;
+
+
+if(root==NULL)
+{ 
+
+
+}
+else
+ 
+root = ptr; 
+{
+while(tmp->next!=NULL)
+{
+tmp = tmp->next;
+}
+tmp->next = ptr;
+}
+
+
+return root;
+}
+
+
+FTerm* addFTerm(FTerm* root, FTerm* ptr)
+{
+FTerm* tmp = root; node* tmp1, *tmp2; int flag = 1;
+
+
+if(tmp==NULL)
+{ 
+
+
+}
+else
+{
+ 
+root = ptr;
+
+
+
+
+
+
+while(tmp->next!=NULL)
+{ 
+tmp1 = createNode(NULL, tmp->lsb); tmp2 = createNode(NULL, ptr->lsb); if(cmpBinary(tmp1, tmp2)==flagb)
+{
+flag=0;
+break;
+}
+tmp = tmp->next; 
+}
+
+
+tmp1 = createNode(NULL, tmp->lsb); tmp2 = createNode(NULL, ptr->lsb); if(cmpBinary(tmp1, tmp2)==flagb)
+{
+flag=0;
+}
+if(flag)
+{
+tmp->next = ptr;
+}
+}
+
+
+return root;
+}
+
+
+void addElem(list* root, node* ptr, int o)
+{
+while(root->ones!=o)
+{
+root = root->next;
+}
+
+
+root->elem = addNode(root->elem, ptr);
+}
+
+
+int putBits(node* nd)
+{
+binary* ptr = nd->lsb;
+binary* tmp = ptr;
+int k=0, i, l=0; 
+while(tmp!=NULL)
+{
+if(tmp->bit=='1')
+k++;
+tmp = tmp->next;
+l++;
+}
+
+
+l = bits-l;
+for(i=0;i<l;i++)
+{
+tmp = createBit('0');
+tmp->next = ptr;
+ptr = tmp;
+}
+nd->lsb = ptr;
+return k;
+}
+
+
+int ifXs(binary* ptr1, binary* ptr2)
+{
+int i;
+int flag = 1;
+
+
+for(i=0;i<bits;i++)
+{
+if((ptr1->bit=='X'&& ptr2->bit!='X') || (ptr1-
+>bit!='X'&& ptr2->bit=='X'))
+{
+flag = 0;
+break;
+}
+ptr1 = ptr1->next; 
+ptr2 = ptr2->next;
+}
+}
+
+
+int isIn(int n, minGrp* grp)
+{
+int flag=0;
+while(grp!=NULL)
+{
+if(grp->term == n)
+{
+flag=1;
+break;
+}
+grp = grp->next;
+}
+
+
+return flag;
+}
+
+
+int size(minGrp* ptr)
+{
+int k=0;
+
+
+while(ptr!=NULL)
+{
+k++;
+ptr = ptr->next;
+}
+return k;
+}
+
+
+node* cmpBinary(node* nd1, node* nd2) 
+{
+node* cmp = NULL;
+binary* ptr1 = nd1->lsb; binary* ptr2 = nd2->lsb; binary* res = NULL; minGrp* grp = NULL; binary* tmp;
+int i, k=0;
+char bit;
+
+
+if(!ifXs(ptr1, ptr2))
+{
+return NULL;
+}
+
+
+for(i=0;i<bits;i++)
+{
+if(ptr1->bit==ptr2->bit)
+{ 
+
+
+}
+else
+{
+
+
+
+
+}
+ 
+bit = ptr1->bit;
+
+
+
+
+
+
+bit = 'X';
+k++; 
+res = addBit(res, bit);
+ptr1 = ptr1->next;
+ptr2 = ptr2->next;
+}
+if(k==0)
+{
+return flagb; 
+}
+else if(k==1)
+{ 
+
+
+
+
+
+
+
+
+
+
+
+
+}
+else
+{
+
+
+}
+}
+ 
+grp = addTerm(grp, nd1->trm1); grp = addTerm(grp, nd2->trm1); cmp = createNode(grp, res);
+nd1->flag=1; nd2->flag=1; return cmp;
+
+
+
+
+
+
+return NULL; 
+
+
+binary* getBinary(int n)
+{
+binary* ptr = NULL; binary* lsb = NULL; if(n==0)
+{
+ptr = createBit('0');
+ptr->next = lsb;
+lsb = ptr;
+}
+while(n>0)
+{
+ptr = createBit(n%2+'0');
+ptr->next = lsb;
+lsb = ptr;
+n /= 2;
+} 
+return ptr;
+}
+
+
+node* getPrime(list* step[])
+{
+list* lst;
+node* nde, *tmp; minGrp* trm; binary* bnr;
+list* prime;
+node* root = NULL;
+int l = bits+1, i;
+
+
+for(i=0;i<l;i++)
+{
+lst = step[i];
+while(lst!=NULL)
+{
+nde = lst->elem;
+while(nde!=NULL)
+{
+if(!nde->flag)
+{ 
+
+
+nde->lsb);
+ 
+tmp = createNode(nde->trm1,
+
+
+root = addNode(root, tmp);
+lstp = size(tmp->trm1);
+} 
+nde = nde->next;
+}
+lst = lst->next;
+}
+} 
+
+return root;
+}
+
+
+void getImps(node* nde, prmImps* final)
+{
+FTerm* tmp;
+node* prime;
+
+
+while(final!=NULL)
+{
+prime = nde;
+while(prime!=NULL)
+{
+if(isIn(final->pterm, prime->trm1))
+{ 
+
+
+
+
+
+
+tmp);
+ 
+final->count++;
+tmp = createFTerm(prime->lsb);
+final->pbnry = addFTerm(final->pbnry,
+
+
+} 
+prime = prime->next;
+}
+final = final->next;
+}
+}
+
+
+binary* getBTerm(binary* ptr)
+{
+binary* bterm = NULL;
+char vars[bits];
+char bt;
+int i, k=0; 
+
+for(i=0;i<bits;i++)
+{
+vars[i] = (65+i);
+}
+
+
+i=0;
+while(ptr!=NULL)
+{
+bt = ptr->bit;
+if(bt=='1')
+{
+bterm = addBit(bterm, vars[i]);
+}
+else if(bt=='0')
+{ 
+
+
+
+
+}
+else
+{
+
+
+}
+i++;
+ 
+bterm = addBit(bterm, vars[i]);
+bterm = addBit(bterm, '\'');
+
+
+
+
+
+
+k++; 
+ptr = ptr->next;
+}
+if(k==bits)
+{
+bterm = addBit(bterm, '1');
+}
+
+
+return bterm;
+} 
+
+FTerm* getFTerm(prmImps* final)
+{
+FTerm* fTerm = NULL; FTerm* bnry, *tmp; binary* eqvlnt;
+prmImps* root = final, *del;
+node* nd1, *nd2;
+int flag;
+while(root!=NULL)
+{
+if(root->count==1)
+{
+eqvlnt = root->pbnry->lsb; tmp = createFTerm(eqvlnt); fTerm = addFTerm(fTerm, tmp);
+}
+
+
+root = root->next;
+}
+root = final;
+while(root!=NULL)
+{
+flag=0;
+bnry = root->pbnry;
+while(bnry!=NULL)
+{
+nd1 = createNode(NULL, bnry->lsb);
+tmp = fTerm;
+while(tmp!=NULL)
+{
+nd2 = createNode(NULL, tmp->lsb);
+if(cmpBinary(nd1, nd2)==flagb) 
+{
+if(root==final)
+{
+del = root;
+final = root->next; root = final; free(del);
+flag=1;
+break;
+}
+}
+tmp = tmp->next;
+}
+if(flag)
+{
+break;
+}
+bnry = bnry->next;
+}
+if(!flag)
+{
+eqvlnt = root->pbnry->lsb; tmp = createFTerm(eqvlnt); fTerm = addFTerm(fTerm, tmp); del = root;
+final = root->next;
+root = final;
+free(del);
+}
+}
+tmp = fTerm;
+while(tmp!=NULL)
+{ 
+tmp->lsb = getBTerm(tmp->lsb);
+tmp = tmp->next;
+}
+
+
+return fTerm;
+}
+
+
+void getLine()
+{
+int i, l = 10 + lstp*4; printf("+--------------+"); for(i=0;i<l;i++)
+{
+printf("-");
+}
+printf("+");
+for(i=0;i<bits+2;i++)
+{
+printf("-");
+}
+printf("+\n");
+}
+
+
+void dispList(list* tmp)
+{
+while(tmp!=NULL)
+{
+getLine();
+printf("|    List %i   ", tmp->ones);
+dispNode(tmp->elem);
+tmp = tmp->next;
+}
+} 
+
+void getSpace(int l)
+{
+if(l==1)
+{ 
+
+
+}
+else
+{
+
+
+
+
+}
+int i;
+ 
+l = 3 + lstp*2;
+
+
+
+
+
+
+l = lstp-l;
+l = 5 + l*2; 
+for(i=0;i<l;i++)
+{
+printf("");
+}
+}
+
+
+void dispNode(node* tmp)
+{
+int flag=0; int i, l; if(tmp==NULL)
+{
+printf(" |"); getSpace(1); printf(" -  "); getSpace(1); printf("| "); for(i=0;i<bits;i++)
+{
+printf("~"); 
+}
+printf(" |\n");
+}
+while(tmp!=NULL)
+{
+if(flag)
+{
+printf("|             ");
+}
+flag=1; printf(" |"); getSpace(size(tmp->trm1)); dispTerm(tmp->trm1); getSpace(size(tmp->trm1)); printf("| ");
+dispBnry(tmp->lsb);
+printf(" |\n");
+tmp = tmp->next;
+}
+}
+
+
+void dispTerm(minGrp* tmp)
+{
+int i;
+while(tmp!=NULL)
+{
+i = tmp->term;
+if(i<10)
+{
+printf("");
+}
+printf("%i  ", tmp->term);
+tmp = tmp->next; 
+}
+}
+
+
+void dispBnry(binary* tmp)
+{
+while(tmp!=NULL)
+{
+printf("%c", tmp->bit);
+tmp = tmp->next;
+}
+}
+
+
+void dispFTerm(FTerm* root)
+{
+if(root==NULL)
+{
+printf("0");
+}
+while(root!=NULL)
+{
+dispBnry(root->lsb); root = root->next; if(root!=NULL)
+{
+printf(" + ");
+}
+}
+}
